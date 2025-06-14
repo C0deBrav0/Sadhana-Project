@@ -22,3 +22,31 @@ function createDevoteeSheets() {
     }
   });
 }
+
+function updateTemplate(sheet) {
+  var today = new Date();
+  var dayOfWeek = today.getDay();
+
+  // Monday of previous week
+  var lastMonday = new Date(today);
+  lastMonday.setDate(today.getDate() - 7 - ((dayOfWeek + 6) % 7));
+
+  // Sunday of previous week
+  var nextSunday = new Date(lastMonday);
+  nextSunday.setDate(lastMonday.getDate() + 6);
+
+  var formattedLastMonday = Utilities.formatDate(lastMonday, Session.getScriptTimeZone(), "d MMM");
+  var formattedNextSunday = Utilities.formatDate(nextSunday, Session.getScriptTimeZone(), "d MMM");
+  var dateRange = formattedLastMonday + " - " + formattedNextSunday;
+
+  // Set weekly date range in B10 (or any suitable cell near totals)
+  sheet.getRange('B10').setValue(dateRange);
+
+  // Set daily dates Mon-Sun in B2:B8
+  for (var i = 0; i < 7; i++) {
+    var day = new Date(lastMonday);
+    day.setDate(lastMonday.getDate() + i);
+    var formattedDay = Utilities.formatDate(day, Session.getScriptTimeZone(), "d MMM");
+    sheet.getRange('B' + (2 + i)).setValue(formattedDay);
+  }
+}
