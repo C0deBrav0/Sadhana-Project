@@ -17,7 +17,7 @@ function createDevoteeSheets() {
 
     if (!ss.getSheetByName(sheetName)) {
       var newSheet = ss.insertSheet(sheetName);
-      var sourceRange = templateSheet.getRange('A3:L12');
+      var sourceRange = templateSheet.getRange('A1:L10');
       sourceRange.copyTo(newSheet.getRange(1, 1), { contentsOnly: false });
     }
   });
