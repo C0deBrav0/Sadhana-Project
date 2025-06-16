@@ -57,9 +57,9 @@ function appendNewWeekToDevoteeSheetsMerged() {
     var sheet = ss.getSheetByName(name.toString().trim());
     if (!sheet) return;
 
-    // Parse Monday from week range
+    // Parse Monday from current top week range
     var topWeekRange = sheet.getRange(1, 3).getValue();
-    var monday = (function(str) {
+    var monday = (function (str) {
       if (!str) return null;
       var parts = str.split(' - ');
       if (parts.length < 1) return null;
@@ -73,7 +73,6 @@ function appendNewWeekToDevoteeSheetsMerged() {
       var today = new Date();
       var year = today.getFullYear();
       var date = new Date(year, month, day);
-
       if ((date - today) > 3 * 86400000) date.setFullYear(year - 1);
 
       var d = new Date(date);
@@ -82,7 +81,7 @@ function appendNewWeekToDevoteeSheetsMerged() {
       var diff = (weekday === 0) ? -6 : 1 - weekday;
       d.setDate(d.getDate() + diff);
       return d;
-    })(topWeekRange) || (function(date) {
+    })(topWeekRange) || (function (date) {
       var d = new Date(date);
       d.setHours(0, 0, 0, 0);
       var weekday = d.getDay();
@@ -92,22 +91,50 @@ function appendNewWeekToDevoteeSheetsMerged() {
     })(new Date());
 
     var nextMonday = new Date(monday.getTime() + 7 * 86400000);
+    var nextMondayStr = `${nextMonday.getDate()} ${nextMonday.toLocaleString('en-US', { month: 'short' })}`; // "17 Jun"
 
-    // Insert new block
+    // Deduplication check: scan A2:A8 for nextMondayStr to avoid duplicate week
+    var isDuplicate = false;
+    for (var row = 2; row <= 8; row++) {
+      var cellValue = sheet.getRange(row, 1).getValue();
+
+      if (cellValue instanceof Date) {
+        var cellStr = `${cellValue.getDate()} ${cellValue.toLocaleString('en-US', { month: 'short' })}`;
+        if (cellStr === nextMondayStr) {
+          isDuplicate = true;
+          break;
+        }
+      } else if (typeof cellValue === 'string') {
+        if (cellValue.trim() === nextMondayStr) {
+          isDuplicate = true;
+          break;
+        }
+      }
+    }
+
+    if (isDuplicate) {
+      Logger.log(`Skipping ${name} — week starting ${nextMondayStr} already exists.`);
+      return;
+    }
+
+    // Insert new block with gap rows on top
     sheet.insertRows(1, blockHeight + gapRows);
     templateRange.copyTo(sheet.getRange(1, 1), { contentsOnly: false });
     sheet.getRange(blockHeight + 1, 1, gapRows, sheet.getMaxColumns()).clearContent();
 
-    // Fill only dates and days (no header update)
+    // Fill dates and day names for the new week
     for (var i = 0; i < 7; i++) {
       var d = new Date(nextMonday.getTime() + i * 86400000);
       var formattedDate = `${d.getDate()} ${d.toLocaleString('en-US', { month: 'short' })}`;
       var dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
-      sheet.getRange(1 + 1 + i, 1).setValue(formattedDate); // Column A
-      sheet.getRange(1 + 1 + i, 2).setValue(dayName);       // Column B
+      sheet.getRange(2 + i, 1).setValue(formattedDate); // Column A
+      sheet.getRange(2 + i, 2).setValue(dayName);       // Column B
     }
   });
 }
+
+
+
 function syncDevoteeSheets() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var templateSheet = ss.getSheetByName('template');
