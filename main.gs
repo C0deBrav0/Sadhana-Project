@@ -20,9 +20,26 @@ function createDevoteeSheets() {
       var newSheet = ss.insertSheet(sheetName);
       var sourceRange = templateSheet.getRange('A1:L10');
       sourceRange.copyTo(newSheet.getRange(1, 1), { contentsOnly: false });
+
+      // Fill current week's dates and days in the new sheet
+      var today = new Date();
+      today.setHours(0, 0, 0, 0);
+      var day = today.getDay();
+      var monday = new Date(today);
+      monday.setDate(today.getDate() - ((day === 0) ? 6 : day - 1)); // Get Monday
+
+      for (var i = 0; i < 7; i++) {
+        var date = new Date(monday.getTime() + i * 86400000);
+        var formattedDate = `${date.getDate()} ${date.toLocaleString('en-US', { month: 'short' })}`;
+        var dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+
+        newSheet.getRange(2 + i, 1).setValue(formattedDate); // Column A (Dates)
+        newSheet.getRange(2 + i, 2).setValue(dayName);        // Column B (Day Names)
+      }
     }
   });
 }
+
 
 function appendNewWeekToDevoteeSheetsMerged() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
